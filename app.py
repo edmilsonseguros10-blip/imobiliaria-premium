@@ -8,7 +8,7 @@ import io
 # --- FUNÇÃO DE CONEXÃO (MODO NUVEM NEON ☁️) ---
 def get_db_connection():
     url_do_banco = "postgres://neondb_owner:npg_HxAsIhy6q8n@ep-delicate-mud-ah3mkiw5-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
-    return psycopg2.connect(url_do_banco)
+    return psycopg2.connect(url_do_banco, password="npg_HxAsIhy6q8n")
     
 # 1. Configurações de Página
 st.set_page_config(page_title="BR House Imóveis", page_icon="🏡", layout="wide")
@@ -377,6 +377,7 @@ if menu == "🔐 Área do Corretor":
             else:
 
                 st.warning("Nenhum imóvel encontrado com esse perfil.")
+
 
 
 
