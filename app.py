@@ -9,7 +9,6 @@ import io
 def get_db_connection():
     # ⚠️ IMPORTANTE: Apague o texto abaixo e cole o link que você copiou do Neon!
     url_do_banco = "postgres://neondb_owner:npg_HxAsIhy6q8n@ep-delicate-mud-ah3mkiw5-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
-   
     return psycopg2.connect(url_do_banco)
     
 # 1. Configurações de Página
@@ -379,6 +378,7 @@ if menu == "🔐 Área do Corretor":
             else:
 
                 st.warning("Nenhum imóvel encontrado com esse perfil.")
+
 
 
 
