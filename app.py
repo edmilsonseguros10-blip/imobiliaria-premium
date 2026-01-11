@@ -53,6 +53,7 @@ def init_db():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        # Ativa suporte a IA no banco
         cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS imoveis_v5 (
@@ -123,3 +124,28 @@ else:
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        cur.execute("SELECT title, price, category, tipo_negocio, description, image_data FROM imoveis_v5 ORDER BY id DESC")
+        imoveis = cur.fetchall()
+        
+        if not imoveis:
+            st.info("Nenhum imóvel cadastrado ainda.")
+        
+        for imovel in imoveis:
+            with st.container():
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    if imovel[5]:
+                        st.image(imovel[5], use_container_width=True)
+                    else:
+                        st.write("Sem foto")
+                with col2:
+                    st.write(f"### {imovel[0]}")
+                    st.write(f"**{imovel[3]} - {imovel[2]}**")
+                    st.write(f"💰 R$ {imovel[1]:,.2f}")
+                    st.write(imovel[4])
+                st.divider()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        st.error(f"Erro ao buscar imóveis: {e}")
+
