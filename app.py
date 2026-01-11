@@ -55,6 +55,10 @@ def init_db():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        
+        # --- ESTA É A LINHA QUE VOCÊ DEVE ADICIONAR ---
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        
         cur.execute("""
             CREATE TABLE IF NOT EXISTS imoveis_v5 (
                 id SERIAL PRIMARY KEY,
@@ -146,6 +150,7 @@ else:
                 st.divider()
     except Exception as e:
         st.error(f"Erro ao buscar imóveis: {e}")
+
 
 
 
