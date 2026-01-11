@@ -10,8 +10,14 @@ import io
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def get_db_connection():
-    # Usa a DATABASE_URL que você já salvou nos Secrets
-    return psycopg2.connect(st.secrets["DATABASE_URL"])
+    return psycopg2.connect(
+        dbname="neondb",
+        user="neondb_owner",
+        password="npg_pGbh9ZAc2iwf", # <--- Cole aqui a senha que você acabou de resetar
+        host="ep-delicate-mud-ah3mkiw5-pooler.us-east-1.aws.neon.tech",
+        port="5432",
+        sslmode="require"
+    )
 
 
 # --- 2. CONFIGURAÇÕES DA PÁGINA ---
@@ -140,6 +146,7 @@ else:
                 st.divider()
     except Exception as e:
         st.error(f"Erro ao buscar imóveis: {e}")
+
 
 
 
