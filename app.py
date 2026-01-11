@@ -10,15 +10,9 @@ import io
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def get_db_connection():
-    # Dados separados para evitar erro de leitura do link nos Secrets
-    return psycopg2.connect(
-        dbname="neondb",
-        user="neondb_owner",
-        password="npg_HxAsIhy6q8n",
-        host="ep-delicate-mud-ah3mkiw5-pooler.us-east-1.aws.neon.tech",
-        port="5432",
-        sslmode="require"
-    )
+    # Usa a DATABASE_URL que você já salvou nos Secrets
+    return psycopg2.connect(st.secrets["DATABASE_URL"])
+
 
 # --- 2. CONFIGURAÇÕES DA PÁGINA ---
 st.set_page_config(page_title="BR House Imóveis", page_icon="🏠", layout="wide")
@@ -146,5 +140,6 @@ else:
                 st.divider()
     except Exception as e:
         st.error(f"Erro ao buscar imóveis: {e}")
+
 
 
