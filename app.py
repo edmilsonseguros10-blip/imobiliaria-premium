@@ -11,7 +11,7 @@ def get_db_connection():
 url_do_banco = "postgresql://neondb_owner:npg_HxAsIhy6q8n@ep-delicate-mud-ah3mkiw5-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
     return psycopg2.connect(url_do_banco)
     return psycopg2.connect(url_do_banco)
-    )
+    
 # 1. Configurações de Página
 st.set_page_config(page_title="BR House Imóveis", page_icon="🏡", layout="wide")
 
@@ -377,4 +377,5 @@ if menu == "🔐 Área do Corretor":
                                 st.write(imovel[2])
                     st.markdown("<br>", unsafe_allow_html=True)
             else:
+
                 st.warning("Nenhum imóvel encontrado com esse perfil.")
