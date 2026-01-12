@@ -1,151 +1,75 @@
-import streamlit as st
-import os
-import psycopg2
-from openai import OpenAI
-from PIL import Image
-import io
+import { useState, useMemo } from 'react';
+import { Header } from '@/components/Header';
+import { Hero } from '@/components/Hero';
+import { PropertyGrid } from '@/components/PropertyGrid';
+import { PropertyFormModal } from '@/components/PropertyFormModal';
+import { Footer } from '@/components/Footer';
+import { mockProperties, Property } from '@/data/properties';
 
-# --- 1. CONFIGURAÇÕES DE SEGURANÇA (SECRETS) ---
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+const Index = () => {
+  const [cadastroOpen, setCadastroOpen] = useState(false);
+  const [properties, setProperties] = useState<Property[]>(mockProperties);
+  const [filters, setFilters] = useState({
+    search: '',
+    category: '',
+    tipoNegocio: '',
+  });
 
-def get_db_connection():
-    return psycopg2.connect(
-        dbname="neondb",
-        user="neondb_owner",
-        password="npg_pGbh9ZAc2iwf", 
-        host="ep-delicate-mud-ah3mkiw5-pooler.us-east-1.aws.neon.tech",
-        port="5432",
-        sslmode="require"
-    )
+  const filteredProperties = useMemo(() => {
+    return properties.filter((property) => {
+      const matchesSearch =
+        !filters.search ||
+        property.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        property.description.toLowerCase().includes(filters.search.toLowerCase()) ||
+        property.endereco?.toLowerCase().includes(filters.search.toLowerCase());
 
-# --- 2. CONFIGURAÇÕES DA PÁGINA ---
-st.set_page_config(page_title="BR House Imóveis", page_icon="🏠", layout="wide")
+      const matchesCategory =
+        !filters.category ||
+        filters.category === 'all' ||
+        property.category === filters.category;
 
-# --- 3. ESTILO CSS ---
-st.markdown("""
-    <style>
-    .stApp { background-color: #f8f9fa; }
-    .stButton > button {
-        background-color: #28a745 !important;
-        color: white !important;
-        font-weight: 700 !important;
-        border-radius: 8px !important;
-        width: 100%;
-    }
-    .main-banner {
-        background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
-                          url("https://images.unsplash.com/photo-1600607687939-ce8a6c25118c");
-        height: 300px;
-        background-size: cover;
-        background-position: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        border-radius: 15px;
-        margin-bottom: 30px;
-    }
-    </style>
-""", unsafe_allow_html=True)
+      const matchesTipoNegocio =
+        !filters.tipoNegocio ||
+        filters.tipoNegocio === 'all' ||
+        property.tipoNegocio === filters.tipoNegocio;
 
-# --- 4. FUNÇÃO PARA CRIAR TABELA NO BANCO ---
-def init_db():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        # Ativa suporte a IA no banco
-        cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS imoveis_v5 (
-                id SERIAL PRIMARY KEY,
-                title TEXT NOT NULL,
-                price REAL NOT NULL,
-                description TEXT,
-                category TEXT,
-                tipo_negocio TEXT,
-                image_data BYTEA,
-                embedding vector(1536)
-            )
-        """)
-        conn.commit()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        st.error(f"Erro ao inicializar banco: {e}")
+      return matchesSearch && matchesCategory && matchesTipoNegocio;
+    });
+  }, [properties, filters]);
 
-# --- 5. FUNÇÃO DE EMBEDDING (IA) ---
-def get_embedding(text):
-    text = text.replace("\n", " ")
-    return client.embeddings.create(input=[text], model="text-embedding-3-small").data[0].embedding
+  const handleSearch = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+  };
 
-# --- INTERFACE ---
-st.markdown('<div class="main-banner"><h1>O imóvel ideal para Morar ou Investir</h1></div>', unsafe_allow_html=True)
+  const handleAddProperty = (property: Omit<Property, 'id'>) => {
+    const newProperty: Property = {
+      ...property,
+      id: Date.now().toString(),
+    };
+    setProperties((prev) => [newProperty, ...prev]);
+  };
 
-init_db()
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header onOpenCadastro={() => setCadastroOpen(true)} />
+      
+      <main className="flex-1">
+        <Hero onSearch={handleSearch} />
+        <PropertyGrid properties={filteredProperties} />
+      </main>
 
-with st.sidebar:
-    st.image("perfil.png", width=100)
-    st.title("Menu de Gestão")
-    aba = st.radio("Escolha uma opção:", ["Ver Imóveis", "Cadastrar Novo"])
+      <Footer />
 
-if aba == "Cadastrar Novo":
-    st.subheader("📝 Cadastrar Imóvel")
-    with st.form("form_cadastro", clear_on_submit=True):
-        titulo = st.text_input("Título do Anúncio")
-        preco = st.number_input("Preço (R$)", min_value=0.0)
-        desc = st.text_area("Descrição Completa")
-        cat = st.selectbox("Categoria", ["Lote em Condomínio", "Casa", "Apartamento", "Terreno"])
-        negocio = st.selectbox("Negócio", ["Venda", "Aluguel"])
-        foto = st.file_uploader("Foto do Imóvel", type=['png', 'jpg', 'jpeg'])
-        
-        if st.form_submit_button("Salvar no Portal"):
-            if titulo and preco > 0:
-                try:
-                    img_bytes = foto.read() if foto else None
-                    emb = get_embedding(f"{titulo} {desc} {cat}")
-                    
-                    conn = get_db_connection()
-                    cur = conn.cursor()
-                    cur.execute("""
-                        INSERT INTO imoveis_v5 (title, price, description, category, tipo_negocio, image_data, embedding)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """, (titulo, preco, desc, cat, negocio, img_bytes, emb))
-                    conn.commit()
-                    cur.close()
-                    conn.close()
-                    st.success("✅ Imóvel cadastrado com sucesso!")
-                except Exception as e:
-                    st.error(f"Erro ao salvar: {e}")
-            else:
-                st.warning("Preencha os campos obrigatórios.")
+      <PropertyFormModal
+        open={cadastroOpen}
+        onOpenChange={setCadastroOpen}
+        onSubmit={handleAddProperty}
+      />
+    </div>
+  );
+};
 
-else:
-    st.subheader("🔍 Imóveis Disponíveis")
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT title, price, category, tipo_negocio, description, image_data FROM imoveis_v5 ORDER BY id DESC")
-        imoveis = cur.fetchall()
-        
-        if not imoveis:
-            st.info("Nenhum imóvel cadastrado ainda.")
-        
-        for imovel in imoveis:
-            with st.container():
-                col1, col2 = st.columns([1, 2])
-                with col1:
-                    if imovel[5]:
-                        st.image(imovel[5], use_container_width=True)
-                    else:
-                        st.write("Sem foto")
-                with col2:
-                    st.write(f"### {imovel[0]}")
-                    st.write(f"**{imovel[3]} - {imovel[2]}**")
-                    st.write(f"💰 R$ {imovel[1]:,.2f}")
-                    st.write(imovel[4])
-                st.divider()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        st.error(f"Erro ao buscar imóveis: {e}")
+export default Index;
+
+
 
