@@ -1,7 +1,1 @@
-streamlit
-psycopg2-binary
-python-dotenv
-pandas
-pillow
-openai
 
